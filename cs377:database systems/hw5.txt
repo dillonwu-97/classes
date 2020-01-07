@@ -1,0 +1,119 @@
+
+CS 377 Database Systems
+Homework 5 (SQL part 1) 
+1)	
+select distinct pnum
+from part, supplier
+where color = 'red' and part.city = 'London'
+
+2)	
+select distinct proj.jnum
+from proj, part, spj
+where color = 'red' AND
+	proj.city = part.city AND
+	spj.pnum =part.pnum AND
+	spj.jnum = proj.jnum
+
+3)	
+select snum
+from supplier
+where snum NOT IN (select supplier.snum
+		from spj, supplier, proj
+		where supplier.city = proj.city AND
+		spj.snum = supplier.snum AND
+		spj.jnum = proj.jnum)
+
+
+4)	
+select distinct supplier.snum
+from supplier, part, spj
+where supplier.snum = spj.snum AND
+	part.pnum = spj.pnum AND
+	part.weight < ALL (select weight
+		from spj, supplier, part
+		where supplier.snum = spj.snum AND
+			part.pnum = spj.pnum AND
+			supplier.sname = 'Blake')
+
+
+5)	
+select distinct proj.jnum
+from proj, part, spj
+where proj.jnum = spj.jnum AND
+	part.pnum = spj.pnum AND
+	proj.jnum NOT IN (select proj.jnum
+		from proj, part, spj
+		where proj.jnum = spj.jnum AND
+		part.pnum = spj.pnum AND
+		pname = 'Nut')
+	AND
+	proj.jnum NOT IN (select proj.jnum
+		from proj, part, spj
+		where proj.jnum = spj.jnum AND
+		part.pnum = spj.pnum AND
+		pname = 'Bolt')
+
+6)	
+select distinct A.snum, part.pnum
+from supplier A, part, spj
+where spj.snum = A.snum AND
+	spj.pnum = part.pnum AND
+	weight >= ALL (select weight
+		from supplier, part, spj
+		where spj.snum=A.snum AND
+		spj.pnum = part.pnum)
+
+
+7)	
+select distinct supplier.snum
+from supplier, spj, part
+where spj.snum = supplier.snum AND
+	part.pnum = part.pnum AND
+	supplier.snum NOT IN (select supplier.snum
+		from supplier, spj, part
+		where spj.snum= supplier.snum AND
+		spj.pnum = part.pnum AND
+		part.pname = 'Nut')
+
+8)	
+select distinct supplier.snum
+from supplier, proj, spj
+where spj.snum = supplier.snum AND	
+	supplier.city = proj.city AND
+	proj.jnum = spj.jnum AND
+	supplier.snum NOT IN (select A.snum
+			from supplier A, proj B, spj C
+			where A.city != B.city AND
+			B.jnum = C.jnum AND 
+			A.snum = C.snum)
+
+
+9)	
+select distinct snum
+from spj A
+where 
+NOT EXISTS (
+	select pnum
+	from spj
+	where pnum IN (select pnum
+		from spj
+		where spj.jnum = 'j6') AND
+	pnum NOT IN (select pnum
+		from spj B
+		where B.snum = A.snum
+	)
+)
+
+10)	
+select distinct jnum
+from proj A
+where NOT EXISTS (select snum
+	from supplier
+	where snum IN (select snum
+		from supplier
+		where A.city = supplier.city) AND
+	snum NOT IN 	(select snum
+		from spj 
+		where jnum = A.jnum)
+	)
+

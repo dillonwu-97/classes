@@ -1,0 +1,155 @@
+1)	
+select sname, count(spj.snum)
+from spj, supplier
+where spj.snum = supplier.snum AND
+	spj.jnum = 'j4'
+group by sname
+having count(spj.snum) >= 3
+
+2)	
+select sname 
+from supplier s
+where NOT EXISTS (select city
+		from proj
+		where city IN (select distinct city
+			from proj)
+		AND city NOT IN (select proj.city
+			from spj, proj
+			where s.snum = spj.snum
+			AND proj.jnum = spj.jnum))
+
+
+3)	
+select jnum
+from proj j
+where NOT EXISTS (select pnum
+	from part
+	where pnum IN (select p.pnum
+		from part p
+		where p.weight = (select max(weight)
+			from part)
+		)
+	and pnum NOT IN (select p2.pnum
+		from spj, part p2
+		where spj.jnum = j.jnum AND
+		spj.pnum = p2.pnum))
+
+4)	
+select pnum
+from part p
+where p.weight = (select max(p2.weight)
+	from part p2
+	where p2.weight IN (select weight
+			from part)
+	and p2.weight NOT IN (select max(weight)
+			from part))
+
+
+5)	
+select F.snum, W.jnum, W.counter
+
+FROM
+(select E.snum, E.jnum, max(A) AS maximum
+	from(select B.snum, B.jnum, count(*) A
+		from spj B, supplier C, proj D
+		where B.snum = C.snum AND
+		D.jnum = B.jnum
+		group by B.snum, B.jnum) E
+group by snum) F
+
+INNER JOIN
+
+(select X.snum, X.jnum, count(*) AS counter
+		from spj X, supplier Y, proj Z
+		where X.snum = Y.snum AND
+		Z.jnum = X.jnum
+		group by X.snum, X.jnum) W
+
+ON W.counter = F.maximum AND F.snum = W.snum
+
+
+
+6)
+
+select distinct B.sname
+from supplier B
+where NOT EXISTS (select jnum
+	from spj
+	where jnum IN (select jnum
+		from proj
+		where B.city = proj.city)
+	AND jnum NOT IN (select jnum
+		from spj
+		where spj.snum = B.snum
+                	group by spj.jnum
+               	having count(spj.snum) >= 2)
+)
+
+7)
+
+select	F.jnum, H.max
+from 	(select spj.jnum, sum(qty) AS sum
+	from spj, part, proj
+	where 	part.pnum = spj.pnum AND
+		proj.jnum = spj.jnum AND
+		part.pname = 'Screw'
+	group by jnum) F
+	
+	INNER JOIN 
+
+	(select max(sum) AS max
+	from (select spj.jnum, sum(qty) AS sum
+		from spj, part, proj
+		where 	part.pnum = spj.pnum AND
+			proj.jnum = spj.jnum AND
+			part.pname = 'Screw'
+		group by jnum) G) H
+where H.max = F.sum
+
+8) 
+
+select sname 
+from supplier B 
+where NOT EXISTS (select jnum
+	from proj
+	where jnum IN (select jnum
+		from proj
+		where B.city = proj.city)
+	AND jnum NOT IN (select jnum
+		from spj
+		where pnum = 'p3' AND 
+		B.snum = spj.snum))
+
+9) 
+select spj.jnum
+from spj, supplier, proj
+where spj.snum = supplier.snum AND 
+	proj.jnum = spj.jnum AND
+	supplier.city != proj.city
+group by jnum 
+having count(spj.snum) >= 5
+
+10) 
+
+select distinct F.jnum
+from (select spj.jnum, count(spj.snum) AS remote
+from spj, supplier, proj
+where spj.snum = supplier.snum AND 
+	proj.jnum = spj.jnum AND
+	supplier.city != proj.city
+group by jnum) F
+
+INNER JOIN
+
+(select spj.jnum, count(spj.snum) AS local
+from spj, supplier, proj
+where spj.snum = supplier.snum AND 
+	proj.jnum = spj.jnum AND
+	supplier.city = proj.city
+group by jnum) E
+
+ON E.jnum = F.jnum
+
+where E.local > F.remote
+
+
