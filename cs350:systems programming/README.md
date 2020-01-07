@@ -4,10 +4,10 @@ I wrote a program which takes a number n and computes a bitmap of primes less th
 
 ## HW2 
 I implemented a modified version of the Linux ar command with '-q', '-x', '-t', and '-A' options. 
-'-q' appends named files to the archive
-'-x' extracts named files with the meta data
-'-t' prints a concise table of contents of the archive
-'-A' appends all regular files in the current directory
+- '-q' appends named files to the archive
+- '-x' extracts named files with the meta data
+- '-t' prints a concise table of contents of the archive
+- '-A' appends all regular files in the current directory
 
 ## HW3
 The point of this program is to practice interprocess communication using pipes. 
@@ -18,6 +18,6 @@ Finally, all duplicates are removed and the remaining words are output to stdout
 ## HW4
 The point of this program is to practice interprogram communication using message queues and shared memory. 
 There are three programs: compute.c, manage.c, and report.c.
-Compute.c computes perfect numbers and and sends the numbers to the "manage" process. More than one instance of compute.c can be run at a given time.
-Manage.c updates the shared memory segment with perfect numbers and tracks the active "compute" processes so that it can signal for them to terminate.
-Report.c reads from shared memory and outputs the perfect numbers tested, skipped, and found by each "compute.c" process. 
+- Compute.c computes perfect numbers and and sends the numbers to the "manage" process. More than one instance of compute.c can be run at a given time.
+- Manage.c updates the shared memory segment with perfect numbers and tracks the active "compute" processes so that it can signal for them to terminate.
+- Report.c reads from shared memory and outputs the perfect numbers tested, skipped, and found by each "compute.c" process. 
