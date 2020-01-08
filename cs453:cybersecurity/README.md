@@ -1,4 +1,4 @@
-# Emory Fall 2019: CS453: Cybersecurity
+# Emory Fall 2019: CS453 Cybersecurity
 
 The labs are on platform.adversary.io. They consisted of binary bombs, web exploit exercises, and binary exploits.
 This folder only contains the binary exploit puzzles and their solutions.
