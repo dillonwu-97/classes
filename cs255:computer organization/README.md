@@ -10,3 +10,10 @@ Scans an input and does some computation
 Moving some stuff around in memory to get familiar with assembly programming
 
 ## HW4
+Doing some arithmetic with arrays and linked lists in assembly
+
+## HW7
+Counts and prints out primes that are less than or equal to some input n
+
+## HW8
+Literally the previous homework but with linked lists and with factorization of n
