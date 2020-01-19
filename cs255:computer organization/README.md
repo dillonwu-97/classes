@@ -7,10 +7,16 @@ Conceptual stuff - no code here
 Scans an input and does some computation
 
 ## HW3
-Moving some stuff around in memory to get familiar with assembly programming
+Moved some stuff around in memory to get familiar with assembly programming
 
 ## HW4
-Doing some arithmetic with arrays and linked lists in assembly
+Performed some arithmetic with arrays and linked lists in assembly
+
+## HW5
+Manipulated two arrays to find min, max, sum, and common elements
+
+## HW6
+Programmed binary search in assembly 
 
 ## HW7
 Counts and prints out primes that are less than or equal to some input n
