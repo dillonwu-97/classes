@@ -5,3 +5,4 @@
 
 ## Homework 2 and Final Project
 - Built a open-domain chatbot that can talk about video games in detail
+- Created various scripts to help with the process of information from online
