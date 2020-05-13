@@ -7,3 +7,7 @@
 ## HW2
 - Wrote apriori algorithm 
 - Optimized algorithm with dynamic and hash-based itemset counting, and transaction reduction
+
+## HW3
+- Wrote KMeans Clustering Algorithm
+- Reports sum of squared error (SSE) and silhouette coefficient
