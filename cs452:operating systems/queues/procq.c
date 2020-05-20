@@ -16,7 +16,28 @@ within the queues.
 proc_t procTable[MAXPROC];
 proc_link procFree_h;
 char buf[128];	/* nonrecoverable error message before shut down */
+//
 
+
+void panic(s)
+register char *s;
+{
+	register char *i=buf;
+
+	while ((*i++ = *s++) != '\0');
+
+//	HALT();
+
+        asm("	trap	#0");
+}
+
+
+
+
+
+
+
+//
 // Inserts element pointed to by p into the process queue where tp contains the pointer to the tail
 // Updates the tail pointer 
 // If process is already in SEMMAX queues, call panic function
@@ -89,8 +110,11 @@ proc_t* removeProc(proc_link *tp) {
 		// Resetting the pointers and returning head
 		head-> p_link[ important_index ].next = (proc_t*)ENULL;
 		head-> p_link[important_index].index = -1;
+		
 	}
-
+	if (head!= (proc_t*)ENULL) {
+		head->qcount--;
+	}
 	return head;
 }
 
@@ -151,6 +175,9 @@ proc_t* outProc(proc_link *tp, proc_t *p) {
 			tp->index = temp_num;
 		}
 	}
+	if (current != (proc_t*)ENULL) {
+		current->qcount--;
+	}
 	return current;
 
 }
@@ -180,7 +207,17 @@ void freeProc(proc_t *p) {
 	procFree_h.next = p;
 	p->semvec[0] = (int*)ENULL;
 	p->qcount = 0;
-	
+	p->child = (proc_t*)ENULL;
+	p->sibling = (proc_t*)ENULL;
+	p->pflag = -1;
+	p->timeofday = -1;
+	p->cputime = -1;
+	p->oldsys = (state_t*)ENULL;
+	p->newsys  = (state_t*)ENULL;
+	p->oldmm   = (state_t*)ENULL;
+	p->newmm = (state_t*)ENULL;
+	p->oldprog = (state_t*)ENULL;
+	p->newprog = (state_t*)ENULL;
 	// resetting p for case i = (1,SEMMAX); 0 case was handled above
 	for (j = 1; j < SEMMAX; j++) {
 		p->p_link[j].index = -1;
@@ -200,34 +237,27 @@ void initProc() {
 			procTable[i].semvec[j] = (int*)ENULL;
 		}
 		procTable[i].qcount = 0;
+		procTable[i].child = (proc_t*)ENULL;
+		procTable[i].sibling = (proc_t*)ENULL;
+		procTable[i].pflag = -1;
+		procTable[i].cputime = 0;
+		procTable[i].timeofday = 0;
+		procTable[i].oldsys = (state_t*)ENULL;
+		procTable[i].newsys  = (state_t*)ENULL;
+		procTable[i].oldmm   = (state_t*)ENULL;
+		procTable[i].newmm = (state_t*)ENULL;
+		procTable[i].oldprog = (state_t*)ENULL;
+		procTable[i].newprog = (state_t*)ENULL;
 	}
 	// handling the 0 cases
 	for (i = 0; i < MAXPROC-1; i++) {		
 		procTable[i].p_link[0].next = &procTable[i+1];
-		procTable[i].p_link[j].index = -1;
 	}
 	// handling the procFree pointer
 	procFree_h.next = &procTable[0];
 	procFree_h.index=-1;
 
 }
-
-
-panic(s)
-register char *s;
-{
-	register char *i=buf;
-
-	while ((*i++ = *s++) != '\0');
-
-	HALT();
-
-        asm("	trap	#0");
-}
-
-
-
-
 
 
 

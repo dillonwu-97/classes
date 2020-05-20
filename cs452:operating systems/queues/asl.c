@@ -145,7 +145,10 @@ proc_t* removeBlocked(int *semAdd) {
 				semdFree_h = location;
 				semdFree_h->s_next = (semd_t*)ENULL;
 			} else {
-				location->s_next = semdFree_h->s_next;
+				semd_t* placeholder = semdFree_h;
+				location->s_next = placeholder;
+				placeholder->s_prev = location;
+				//location->s_next = semdFree_h->s_next;
 				semdFree_h = location;
 			}			
 			location->s_prev = (semd_t*)ENULL;
@@ -166,6 +169,7 @@ proc_t* outBlocked (proc_t *p) {
 	while (temp != (semd_t*)ENULL) {
 		return_dummy = outProc(&(temp->s_link), p);
 		if (return_dummy == p) {
+			*(temp->s_semAdd)= *(temp->s_semAdd) + 1;
 			return_value = return_dummy;
 			// clearing semvec
 			int j;
@@ -192,7 +196,10 @@ proc_t* outBlocked (proc_t *p) {
 					semdFree_h = temp;
 					semdFree_h->s_next = (semd_t*)ENULL;
 				} else {
-					temp->s_next = semdFree_h->s_next;
+					semd_t* placeholder = semdFree_h;
+					temp->s_next = placeholder;
+					placeholder->s_prev = temp;
+					//temp->s_next = semdFree_h->s_next;
 					semdFree_h = temp;
 				}			
 				temp->s_prev = (semd_t*)ENULL;
