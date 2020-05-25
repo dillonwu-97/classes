@@ -18,6 +18,7 @@ Dillon Wu
 #include "../../h/page.e"
 #include "../../h/slsyscall1.e"
 
+#define TERMCOUNT 5
 
 // external variables
 extern int start(), endt0(), startt1(), etext(), startd0(), endd0(), startd1(), edata(),
