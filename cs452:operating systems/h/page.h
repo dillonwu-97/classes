@@ -8,11 +8,19 @@ typedef struct free_frame {
 	int sect_num;
 } free_frame;
 
-// information about i/o associated with each request and sector
 typedef struct dinfo {
-	int op; // operation for the track
-	char* add; // address for diskinput; should be in the format &disk_input[tn][0]
-	char* v_add; // virtual address 
-	int tn; // terminal number
+	int op;
+	int tn;
+	int sector;
+	int track;
+	char* add;
+	int r2;
+	int r3;
 } dinfo;
+
+typedef struct vsem_info {
+	int* add; // saved address for virtual semaphore
+	int sem; // actual physical semaphore
+
+} vsem_info;
 
