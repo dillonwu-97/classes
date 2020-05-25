@@ -18,10 +18,12 @@
 #define MAXFRAMES 10
 #define LOWWATER 3
 #define HIGHWATER 6
+#define TERMCOUNT 5
 
 register int r2 asm("%d2");
 register int r3 asm("%d3");
 register int r4 asm("%d4");
+
 
 // external variables
 extern int start(), endt0(), startt1(), etext(), startd0(), endd0(), startd1(), edata(),
@@ -47,17 +49,20 @@ pd_t pdem_pgtable[1024];
 sd_t ddem_segtable[32];
 pd_t ddem_pgtable[1024];
 
+// contains information used for vlock and vunlock
+vsem_info v_info[TERMCOUNT];
+
 // contains all the free sectors in the swap device; 0 = free, 1 = used
 // i.e. the floppy
 int free_space[100][8] = {0};
 
 // contains information that is used by disk demon, specifically operation and address 
-dinfo disk_info[100][8];
+dinfo disk_info[TERMCOUNT];
 
 // integers and semaphores
 int page_wake = 0; // for waking up page daemon
-int sem_floppy = 1; // disk semaphore
-int sem_disk = 0; // floppy semaphore <-- what is this value?
+int sem_floppy = 1; // controls access to floppy
+int sem_disk = 0; // controls diskdaemon
 int current_track_num = 0; // lower 3 bits so 0 - 7
 int current_sect_num = 8;  // upper 7 bits so 8 - 1023
 int phys_sems[TERMCOUNT]; // array of physical semaphores in segment 2
@@ -155,13 +160,20 @@ pageinit()
 		reset_fi(i);
 	}
 
+	// initializing info for virtual semaphores
+	for (i = 0; i < TERMCOUNT; i++) {
+		v_info[i].add = (int*)ENULL;
+		v_info[i].sem = 0;
+	}
 	// initializing disk info
-	for (i = 0; i < 100; i++) {
-		for (j = 0; j < 8; j++) {
-			disk_info[i][j].op = -1;
-			disk_info[i][j].add = (char*)ENULL;
-			disk_info[i][j].v_add = (char*) ENULL;
-		}
+	for (j = 0; j < TERMCOUNT; j++) {
+		disk_info[j].op = -1;
+		disk_info[j].add = (char*)ENULL;
+		disk_info[j].tn = -1;
+		disk_info[j].track = -1;
+		disk_info[j].sector = -1;
+		disk_info[j].r2 = -1;
+		disk_info[j].r3 = -1;
 	}
 
 	// creating Queue and initializing
@@ -500,14 +512,24 @@ void pagedaemon() {
 			} else {
 				free_sector = track_num * 8 + sect_num;
 			}
-
-
-			vsempop(UNLOCK, &sem_mm);
-			// turn off ref bit and presence bit for the info
-
-			vsempop(LOCK, &sem_floppy);
-			// move the data from the page to swap device
+			// location to copy data from
 			copy_from = (char*)(curr_frame*PAGESIZE);	
+			
+			// store swap location in pd_frame
+			if (seg_num == 1) {
+				termpg_one[tn][page_num].pd_frame = free_sector;
+				// actually i dont think the reference bit should be turned on
+				//termpg_one[tn][page_num].pd_r = 1;
+			} else {
+				termpg_two[page_num].pd_frame = free_sector;
+				//termpg_two[page_num].pd_r = 1;
+			}		
+
+			//vsempop(UNLOCK, &sem_mm);
+			// turn off ref bit and presence bit for the info
+			twopop(UNLOCK, &sem_mm, LOCK, &sem_floppy);
+			//vsempop(LOCK, &sem_floppy);
+			// move the data from the page to swap device
 			
 			// disk seek to find the start of where to write the info
 			dnum = 11;
@@ -523,24 +545,10 @@ void pagedaemon() {
 			flop->d_op = IOWRITE;
 			r4 = dnum;
 			SYS8();
-			vsempop (UNLOCK, &sem_floppy);
-
-			vsempop(LOCK, &sem_mm);
-			// store swap location in pd_frame
-			if (seg_num == 1) {
-				termpg_one[tn][page_num].pd_frame = free_sector;
-				// actually i dont think the reference bit should be turned on
-				//termpg_one[tn][page_num].pd_r = 1;
-			} else {
-				termpg_two[page_num].pd_frame = free_sector;
-				//termpg_two[page_num].pd_r = 1;
-			}
-
-			vsempop(UNLOCK, &sem_mm);
-		//	twopop (UNLOCK, &sem_mm, UNLOCK, &sem_floppy);
-
-			// unlock sem_pf
-			vsempop (UNLOCK, &sem_pf);
+			//vsempop (UNLOCK, &sem_floppy);
+			//twopop(UNLOCK, &sem_floppy, LOCK, &sem_mm);
+			//vsempop(LOCK, &sem_mm);
+			twopop(UNLOCK, &sem_floppy, UNLOCK, &sem_pf);
 
 			
 

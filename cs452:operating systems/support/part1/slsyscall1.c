@@ -20,6 +20,8 @@ Dillon Wu
 // upamount = 128
 // buff size of disk = 512
 
+#define TERMCOUNT 5
+
 extern int wake_cron_mm;
 extern int term_mm;
 extern long term_delay[TERMCOUNT];
