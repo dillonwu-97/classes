@@ -129,13 +129,13 @@ def softmax_loss_naive(W, X, y, reg):
 			# dW = dX/dSi so Si gets cancelled? / something along these lines
 			if j == y[i]:
 				# dW[:,y[i]] += X[i,:] * (Si * (1 - Si)) # Si (1 - Sj)
-				dW[:, y[i]] += X[i,:]* (Si - 1)
+				dW[:, y[i]] += X[i,:]* (Si - 1) * -Si
 			else:
 				Sj = np.exp(theta[j]) / total
 				# print(Si)
 				# print(Sj) 
 				# dW[:,j] += X[i,:] * Si * Sj * -1  #Si * -1*Sj
-				dW[:, j] += Sj * X[i,:]
+				dW[:, j] += Sj * X[i,:]	* -Si
 	loss /= X.shape[0]
 	loss += reg * np.sum (W*W)
 
