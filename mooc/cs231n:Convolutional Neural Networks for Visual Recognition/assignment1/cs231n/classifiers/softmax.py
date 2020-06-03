@@ -32,6 +32,7 @@ def softmax_loss_naive(W, X, y, reg):
 	# regularization!                                                           #
 	#############################################################################
 	# *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+	# The value -Si is gone because u take the derivative with respect to Si on both sides i believe 
 	for i in range(X.shape[0]):
 		theta = X[i].dot(W) # row of values for each class
 		theta -= max(theta)
@@ -41,14 +42,14 @@ def softmax_loss_naive(W, X, y, reg):
 		# loss += -np.log( Si )
 		for j in range(len(theta)):
 			if j == y[i]:
-				dW[:,y[i]] += X[i,:] * (Si * (1 - Si)) # Si (1 - Sj)
-				# dW[:, y[i]] = (Si - 1) * X[i,:]
+				# dW[:,y[i]] += X[i,:] * (Si * (1 - Si)) # Si (1 - Sj)
+				dW[:, y[i]] += (Si - 1) * X[i,:]
 			else:
 				Sj = np.exp(theta[j]) / total
 				# print(Si)
 				# print(Sj) 
-				dW[:,j] += X[i,:] * Si * Sj * -1  #Si * -1*Sj
-				# dW[:, j] = Sj * X[i,:]	
+				# dW[:,j] += X[i,:] * Si * Sj * -1  #Si * -1*Sj
+				dW[:, j] += Sj * X[i,:]	
 	loss /= X.shape[0]
 	loss += reg * np.sum (W*W)
 
