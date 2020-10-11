@@ -80,7 +80,9 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        scores_layer1 = X.dot(W1) + b1
+        scores_layer1 [scores_layer1 < 0] = 0 # ReLU
+        scores = scores_layer1.dot(W2) + b2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -89,7 +91,7 @@ class TwoLayerNet(object):
             return scores
 
         # Compute the loss
-        loss = None
+        loss = 0
         #############################################################################
         # TODO: Finish the forward pass, and compute the loss. This should include  #
         # both the data loss and L2 regularization for W1 and W2. Store the result  #
@@ -97,9 +99,17 @@ class TwoLayerNet(object):
         # classifier loss.                                                          #
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        # maxes = np.max(scores, axis = 1).reshape(scores.shape[0], 1)
+        # scores -= maxes 
+        scores -= np.max(scores, axis = 1, keepdims = True)
+        scores = np.exp(scores)
+        sums = np.sum (scores, axis = 1, keepdims = True)
+        scores /= sums
+        loss += np.sum(-np.log(scores[np.arange(scores.shape[0]), y]))
+        loss /= scores.shape[0] 
+        loss += np.sum(W2 * W2) * reg
+        loss += np.sum(W1 * W1) * reg
+        # print(loss)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         # Backward pass: compute gradients
@@ -111,7 +121,39 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # First compute gradient for W2
+        grads['W2'] = np.zeros(W2.shape)
+        # print(scores_layer1.shape)
+        # print(scores.shape)
+        scores[np.arange(scores.shape[0]), y] -=1
+        # print(scores[0])
+        grads['W2'] = scores_layer1.T.dot(scores)
+        grads['W2'] /= scores_layer1.shape[0]
+        grads['W2'] += W2 * reg * 2 # why do we multiply 2 instead of 1?
+        grads['b2'] = np.sum(scores, axis = 0) # how to regularize bias?
+        grads['b2'] /= scores_layer1.shape[0]
+        # print(grads['W2'])
+        # Then compute gradient for W1
+        grads['W1'] = np.zeros(W1.shape)
+        back_prop_layer = scores.dot(W2.T)
+        # print('dot product is ', scores.dot(W2.T)) # same val as below, different dimensions
+        # print('other dot is ', W2.dot(scores.T))
+        # print('saved layer is ', scores_layer1)
+        # print(back_prop_layer.shape)
+        scores_layer1[scores_layer1 > 0] = 1
+        # print(scores_layer1)
+        back_prop_layer *= scores_layer1
+        # print(back_prop_layer)
+        grads['W1'] = X.T.dot(back_prop_layer)
+        grads['W1'] /= X.shape[0]
+        grads['W1'] += W1 * reg * 2
+        # print(grads['W1'])
+
+
+        grads['b1'] = np.sum(back_prop_layer, axis = 0)
+        grads['b1'] /= X.shape[0]
+        # grads['W1'] = 
+
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -156,7 +198,9 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            indices = np.random.choice(np.arange(num_train), batch_size, replace = True)
+            X_batch = X[indices]
+            y_batch = y[indices]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -172,7 +216,10 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-            pass
+            self.params['W1'] -= (grads['W1'] * learning_rate)
+            self.params['W2'] -= (grads['W2'] * learning_rate)
+            self.params['b1'] -= (grads['b1'] * learning_rate)
+            self.params['b2'] -= (grads['b2'] * learning_rate)
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -217,9 +264,11 @@ class TwoLayerNet(object):
         # TODO: Implement this function; it should be VERY simple!                #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        # print(self.loss(X))
+        # print('zero is ', self.loss(X)[0])
+        # print(' one is ', self.loss(X)[1])
+        y_pred = np.argmax(self.loss(X), axis = 1)
+        # print(y_pred)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         return y_pred
