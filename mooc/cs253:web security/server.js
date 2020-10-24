@@ -56,7 +56,15 @@ app.post('/login', (req, res) => {
 		// res.cookie('username', username, {signed: true})
 		// 16 bytes = 128 bits of entropy
 		const nextSessionId = randomBytes(16).toString('base64')
-		res.cookie('sessionId', nextSessionId)
+		// res.cookie('sessionId', nextSessionId)
+		// in the demo, need to create a site like attacker.com and map to localhost and it will work
+		// it wont work normally because localhost is recognized as the same domain
+		res.cookie('sessionId', nextSessionId, {
+			// secure: true, // cant do this on localhost so just http server
+			httpOnly: true, // protect from javascript
+			sameSite: 'lax', // protect form xsrf
+			maxAge: 30 * 24 * 60 * 1000 // 30 days
+		})
 		SESSIONS[nextSessionId] = username
 		// nextSessionId +=1
 		res.redirect('/')
@@ -65,11 +73,42 @@ app.post('/login', (req, res) => {
 	}
 })
 
+app.post('/transfer', (req, res) => {
+	/*
+	const to = req.body.to
+	const fr = req.cookies.sessionId
+	const amount = req.body.amount
+	BALANCES[to] += parseInt(amount)
+	BALANCES[ SESSIONS[fr] ] -= parseInt(amount)
+	res.redirect('/')
+	*/
+
+	const sessionId = req.cookies.sessionId
+	const username = SESSIONS[sessionId]
+	if (!username) {
+		res.send('fail!')
+		return
+	}
+
+	const amount = Number(req.body.amount)
+	const to = req.body.to
+
+	BALANCES[username] -= amount
+	BALANCES[to] += amount
+
+	res.redirect('/')
+})
+
 app.get('/logout', (req, res) => {
 	// res.clearCookie('username')
 	const sessionId = req.cookies.sessionId
 	delete SESSIONS[sessionId]
-	res.clearCookie('sessionId')
+	// res.clearCookie('sessionId')
+	res.clearCookie('sessionId', {
+		// secure:true, 
+		httpOnly:true,
+		sameSite: 'lax'
+	})
 	res.redirect('/')
 })
 
