@@ -35,6 +35,8 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
     # and cache variables respectively.                                          #
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    next_h = np.tanh(prev_h.dot(Wh) + x.dot(Wx) + b)
+    cache = x, prev_h, Wx, Wh, b, next_h
 
     pass
 
@@ -61,6 +63,7 @@ def rnn_step_backward(dnext_h, cache):
     - db: Gradients of bias vector, of shape (H,)
     """
     dx, dprev_h, dWx, dWh, db = None, None, None, None, None
+    x, prev_h, Wx, Wh, b, next_h = cache    
     ##############################################################################
     # TODO: Implement the backward pass for a single step of a vanilla RNN.      #
     #                                                                            #
@@ -68,8 +71,19 @@ def rnn_step_backward(dnext_h, cache):
     # of the output value from tanh.                                             #
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    # derivative of tanh(x) is 1 - tanh^2(x)
+    dtanh = np.ones(next_h.shape) - np.square(next_h)
+    inner = dnext_h * dtanh
+    dx = (inner).dot(Wx.T) # N x H dot H x D = N x D
 
-    pass
+    dprev_h = (inner).dot(Wh.T)
+
+    dWx = x.T.dot(inner)
+
+    dWh = prev_h.T.dot(inner)
+
+    db = inner.sum(axis = 0)
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -103,13 +117,23 @@ def rnn_forward(x, h0, Wx, Wh, b):
     # above. You can use a for loop to help compute the forward pass.            #
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
-
+    # I think T represents each letter in the word if reading in a sentence
+    N, T, D = x.shape
+    _, H = h0.shape
+    h = np.zeros((N, T, H))
+    current_h = h0
+    cache = []
+    for t in range(T):
+        # print(t)
+        current_h, cache_h = rnn_step_forward(x[:,t,:], current_h, Wx, Wh, b)
+        h[:,t,:] = current_h
+        cache.append(cache_h)
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
+    # cache = x, h, Wx, Wh, b, h0
+    # print(h)
     return h, cache
 
 
@@ -139,9 +163,28 @@ def rnn_backward(dh, cache):
     # defined above. You can use a for loop to help compute the backward pass.   #
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    # h0 is the start value
+    N, T, H = dh.shape
+    _, D = cache[-1][0].shape
 
-    pass
+    # initializing values
+    dx = np.zeros((N, T, D))
+    dh0 = np.zeros((N, H))
+    dWx = np.zeros((D,H))
+    dWh = np.zeros((H,H))
+    db = np.zeros((H,))
 
+    # this is used to update the upstream gradient with the gradients of the previous hidden state
+    # Not sure why though
+    temp = np.zeros((N,H))
+    for t in range(T-1, -1, -1): # going backwards   
+        t_dx, t_dprev_h, t_dWx, t_dWh, t_db = rnn_step_backward(dh[:,t,:] + temp, cache[t])
+        temp = t_dprev_h
+        dx[:, t, :] = t_dx
+        dWx += t_dWx
+        dWh += t_dWh
+        db += t_db
+    dh0 = t_dprev_h
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -172,7 +215,18 @@ def word_embedding_forward(x, W):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # naive:
+    N, T = x.shape
+    V, D = W.shape
+    out = np.zeros((N, T, D))
+    for n in range(N):
+        for t in range(T):
+            out[n,t,:] = W[x[n][t],:]
+    # print(out)
+
+    # one line implementation
+    out = W[x]
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
