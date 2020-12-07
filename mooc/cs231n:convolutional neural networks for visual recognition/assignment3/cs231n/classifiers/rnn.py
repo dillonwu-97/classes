@@ -257,24 +257,55 @@ class CaptioningRNN(object):
 		# you are using an LSTM, initialize the first cell state to zeros.        #
 		###########################################################################
 		# *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-		hidden_state, aff_cache = affine_forward(features, W_proj, b_proj)
+		hidden_state, _ = affine_forward(features, W_proj, b_proj)
 		# print(hidden_state.shape)
+		captions[:,0] = self._start
+		current = self._start * np.ones((N,1), dtype=np.int32)
+		step_out_c = np.zeros(hidden_state.shape)
 		for t in range(max_length):
 			# get the word embeddings for each respective word
-			we_out, we_cache = word_embedding_forward(captions, W_embed)
-			# print(D, features.shape, W_proj.shape, we_out.shape)
-			# break
-			# rnn_step_forward(x, prev_h, Wx, Wh, b):
-			print(we_out[:,t])
-			next_h, rnn_cache = rnn_step_forward(we_out[:,t], hidden_state, Wx, Wh, b)
-			vocab_out, vocab_cache = affine_forward(next_h, W_vocab, b_vocab)
-			am = np.argmax(vocab_out, axis=1)
-			print(t, am)
-			captions[:,t] = am
-			print(captions)
-			if t == 5: break
-			
+			# intuition for this is that we get the current word for each sample and then give
+			# it the corresponding weight from W_embed, which returns an np array object of shape
+			# (N, 1, D). We then flatten this matrix so that it is just N, D
+			# Additionally, W_embed.shape[0] reveals the vocabulary size; this vocabulary size
+			# is the same number that gets outputted after the temporal affine forward layer, 
+			# specifically the vocab_out[2] dimension
+			we_out, _ = word_embedding_forward(current, W_embed)
+			# have to flatten the dimensions so that (N, 1, D) => (N, D)
+			we_out = np.squeeze(we_out)
+			# print(we_out.shape, W_embed.shape)
 
+			# we now get the next hidden state using the rnn forward pass
+			# the intution for this is that the next hidden state represents a hidden state
+			# that takes into consideration the fact that the previous word is what it was
+			# remember, this is because with rnn's we "unroll a network"
+			if self.cell_type == 'rnn':
+				step_out, _ = rnn_step_forward(we_out, hidden_state, Wx, Wh, b)
+				hidden_state = step_out
+				step_out = np.expand_dims(step_out, axis = 1)
+			elif self.cell_type == 'lstm':
+				step_out, step_out_c, _ = lstm_step_forward(we_out, hidden_state, step_out_c, Wx, Wh, b)
+				hidden_state = step_out
+				step_out = np.expand_dims(step_out, axis = 1)
+
+			# print(we_out.shape, hidden_state.shape, rnn_out.shape)
+
+			# Afterwards, we get the scores of each word in the dictionary using a temporal affine forward layer
+			# Temporal forwards take in an np array of shape (N, T, D) and produces an array of shape
+			# (N, T, M) 
+			vocab_out, _ = temporal_affine_forward(step_out, W_vocab, b_vocab)
+			# print(vocab_out.shape)
+			
+			# Finally, we pick the correct vocabulary from the vocab_out array
+			# The vocab_out array is a matrix of shape (N, 1, Vocab size), so we take the argmax 
+			# of each N for each axis=1 column and then use it for the next iteration
+			# We do this by saving the argmax value in the captions index, and we also update the current
+			# with the argmax value
+			am = np.argmax(vocab_out, axis=2)
+			current = am
+			am = np.squeeze(am)
+			captions[:,t] = am 
+			# if t == 5: break
 
 
 

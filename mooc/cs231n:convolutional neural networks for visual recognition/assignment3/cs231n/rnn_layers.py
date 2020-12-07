@@ -214,9 +214,9 @@ def word_embedding_forward(x, W):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     # naive:
-    N, T = x.shape
-    V, D = W.shape
-    out = np.zeros((N, T, D))
+    # N, T = x.shape
+    # V, D = W.shape
+    # out = np.zeros((N, T, D))
     # for n in range(N):
     #     for t in range(T):
     #         out[n,t,:] = W[x[n][t],:]
@@ -259,9 +259,9 @@ def word_embedding_backward(dout, cache):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     w, x = cache
-    dW = np.zeros(w.shape)
-    N, T, D = dout.shape
-    V, _ = w.shape
+    # dW = np.zeros(w.shape)
+    # N, T, D = dout.shape
+    # V, _ = w.shape
     # for n in range(N):
     #     for t in range(T):
     #         # print(dout[n,t,:].shape)
