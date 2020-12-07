@@ -160,6 +160,8 @@ class CaptioningRNN(object):
 		# Step 3
 		if self.cell_type=='rnn':
 			step3_out, step3_cache = rnn_forward(step2_out, step1_out, Wx, Wh, b)
+		elif self.cell_type=='lstm':
+			step3_out, step3_cache = lstm_forward(step2_out, step1_out, Wx, Wh, b)
 
 		# Step 4
 		step4_out, step4_cache = temporal_affine_forward (step3_out, W_vocab, b_vocab)
@@ -174,7 +176,10 @@ class CaptioningRNN(object):
 		grads['W_vocab'] += dW_vocab
 		grads['b_vocab'] += db_vocab
 
-		dx, dh0, dWx, dWh, db = rnn_backward(dx, step3_cache)
+		if self.cell_type=='rnn':
+			dx, dh0, dWx, dWh, db = rnn_backward(dx, step3_cache)
+		elif self.cell_type=='lstm':
+			dx, dh0, dWx, dWh, db = lstm_backward(dx, step3_cache)
 		grads['Wx'] += dWx
 		grads['Wh'] += dWh
 		grads['b'] += db
@@ -218,7 +223,7 @@ class CaptioningRNN(object):
 		  where each element is an integer in the range [0, V). The first element
 		  of captions should be the first sampled word, not the <START> token.
 		"""
-		N = features.shape[0]
+		N, D = features.shape
 		captions = self._null * np.ones((N, max_length), dtype=np.int32)
 
 		# Unpack parameters
@@ -252,8 +257,26 @@ class CaptioningRNN(object):
 		# you are using an LSTM, initialize the first cell state to zeros.        #
 		###########################################################################
 		# *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+		hidden_state, aff_cache = affine_forward(features, W_proj, b_proj)
+		# print(hidden_state.shape)
+		for t in range(max_length):
+			# get the word embeddings for each respective word
+			we_out, we_cache = word_embedding_forward(captions, W_embed)
+			# print(D, features.shape, W_proj.shape, we_out.shape)
+			# break
+			# rnn_step_forward(x, prev_h, Wx, Wh, b):
+			print(we_out[:,t])
+			next_h, rnn_cache = rnn_step_forward(we_out[:,t], hidden_state, Wx, Wh, b)
+			vocab_out, vocab_cache = affine_forward(next_h, W_vocab, b_vocab)
+			am = np.argmax(vocab_out, axis=1)
+			print(t, am)
+			captions[:,t] = am
+			print(captions)
+			if t == 5: break
+			
 
-		pass
+
+
 
 		# *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 		############################################################################

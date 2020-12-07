@@ -38,8 +38,6 @@ def rnn_step_forward(x, prev_h, Wx, Wh, b):
     next_h = np.tanh(prev_h.dot(Wh) + x.dot(Wx) + b)
     cache = x, prev_h, Wx, Wh, b, next_h
 
-    pass
-
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -219,9 +217,9 @@ def word_embedding_forward(x, W):
     N, T = x.shape
     V, D = W.shape
     out = np.zeros((N, T, D))
-    for n in range(N):
-        for t in range(T):
-            out[n,t,:] = W[x[n][t],:]
+    # for n in range(N):
+    #     for t in range(T):
+    #         out[n,t,:] = W[x[n][t],:]
     # print(out)
 
     # one line implementation
@@ -264,11 +262,11 @@ def word_embedding_backward(dout, cache):
     dW = np.zeros(w.shape)
     N, T, D = dout.shape
     V, _ = w.shape
-    for n in range(N):
-        for t in range(T):
-            # print(dout[n,t,:].shape)
-            # print(x[n][t])
-            dW[x[n][t],:] += dout[n,t,:]
+    # for n in range(N):
+    #     for t in range(T):
+    #         # print(dout[n,t,:].shape)
+    #         # print(x[n][t])
+    #         dW[x[n][t],:] += dout[n,t,:]
 
     # implementation with np.add.at
     dW = np.zeros(w.shape)
@@ -324,9 +322,23 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     # You may want to use the numerically stable sigmoid implementation above.  #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    # Observations: 4H for each of the four hidden states / activation functions
+    x_activate = x.dot(Wx)
+    h_activate = prev_h.dot(Wh)
+    N, H = prev_h.shape
+    N, D = x.shape
 
-    pass
+    total_activate = np.zeros((N, 4*H))
+    # In order, the columns are input gate(i), forget gate(f), output gate(o), gate gate(g)
+    for i in range(0, 3*H, H):
+    	total_activate[:,i:i+H] = sigmoid(x_activate[:,i:i+H] + h_activate[:,i:i+H] + b[i:i+H])
+    total_activate[:,3*H:4*H] = np.tanh(x_activate[:,3*H:4*H] + h_activate[:,3*H:4*H] + b[3*H:4*H])
 
+    # print((total_activate[:,0:H] * prev_c).shape, )
+    next_c = total_activate[:,H:2*H] * prev_c + total_activate[:,0:H] * total_activate[:,3*H:4*H]
+    next_h = np.tanh(next_c) * total_activate[:,2*H:3*H]
+    
+    cache = total_activate, next_c, next_h, x, prev_h, prev_c, Wx, Wh, b
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -361,14 +373,55 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # Equations of forward propagation for lstm https://www.researchgate.net/figure/Structure-of-the-LSTM-cell-and-equations-that-describe-the-gates-of-an-LSTM-cell_fig5_329362532
+    # sigmoid derivative is sig(x) * (1 - sig(x))
+    # tanh derivative is 1-tanh^2(x)
+    # In order, the columns are input gate(i), forget gate(f), output gate(o), gate gate(g)
+    total_activate, next_c, next_h, x, prev_h, prev_c, Wx, Wh, b = cache
+    N, D = x.shape
+    _, H = prev_h.shape
+    i = total_activate[:,0:H]
+    f = total_activate[:, H:2*H]
+    o = total_activate[:, 2*H:3*H]
+    g = total_activate[:, 3*H:4*H]
 
+    # for outer derivatives
+    tan_next_c = np.tanh(next_c)
+    derivative_including_dnext_h = o * dnext_h
+    derivative_ht = ( np.ones(next_c.shape) - np.square(tan_next_c) ) * derivative_including_dnext_h 
+    derivative_next_c = derivative_ht + dnext_c # Why addition??? 
+    # Thoughts about the problem:
+    # Shouldnt it be something like the calculation below or at the very least derivative_ht * dnext_c??
+    # derivative_next_c = next_c * (np.ones(next_c.shape) - next_c) * derivative_ht # sigmoid calculation
+    # Is it because we are "forking" the gradients? i.e. one comes from h and another from C
+    # So when we do a backwards pass towards x, we get values from both C and h
+    # Ok, I think it is because we do not immediately find derivative with respect to x, but 
+    # instead the derivative with respect to next_c; at the intersection we join the two derivatives
+    # and then find the derivative of next_c with respect to x, which is why there is an addition
+    # So, it is dnext_h * o * tan-derivative <-- dnexth / dnextc + dnextc AND THEN dnextc/dx
+
+    dx = np.zeros((N, 4*H)) # used to get finaldx
+    di = i * (np.ones(i.shape) - i)
+    df = f * (np.ones(f.shape) - f)
+    do = o * (np.ones(o.shape) - o)
+    dg = np.ones(g.shape) - np.square(g)
+    dx[:,0:H] = derivative_next_c * g * di # input gate
+    dx[:,H:2*H] = derivative_next_c * prev_c * df
+    dx[:,2*H:3*H] = tan_next_c * do * dnext_h # why dnext_h here?
+    dx[:, 3*H:4*H] = derivative_next_c * i * dg
+    
+    finaldx = dx.dot(Wx.T)
+    dprev_h = dx.dot(Wh.T)
+    dprev_c = f * derivative_next_c
+    dWx = x.T.dot(dx)
+    dWh = prev_h.T.dot(dx)
+    db = np.sum(dx, axis = 0)
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
     ##############################################################################
 
-    return dx, dprev_h, dprev_c, dWx, dWh, db
+    return finaldx, dprev_h, dprev_c, dWx, dWh, db
 
 
 def lstm_forward(x, h0, Wx, Wh, b):
@@ -399,9 +452,19 @@ def lstm_forward(x, h0, Wx, Wh, b):
     # You should use the lstm_step_forward function that you just defined.      #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    N, T, D = x.shape
+    _, H = h0.shape
+    next_h = h0
+    next_c = np.zeros((N, H))
+    cache_vals = []
+    h = np.zeros((N, T, H))
+    for i in range(T):
+    	# (x, prev_h, prev_c, Wx, Wh, b):
+    	next_h, next_c, cache_step = lstm_step_forward(x[:,i,:], next_h, next_c, Wx, Wh, b)
+    	h[:,i,:] = next_h
+    	cache_vals.append(cache_step)
 
-    pass
-
+    cache = cache_vals, next_c
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -431,9 +494,32 @@ def lstm_backward(dh, cache):
     # You should use the lstm_step_backward function that you just defined.     #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+    cache_vals, next_c = cache
+    N, T, H = dh.shape
+    _, D = cache_vals[0][3].shape # x.shape
+    dx = np.zeros((N, T, D))
+    dh0 = np.zeros((N, H))
+    dWx = np.zeros((D, 4*H))
+    dWh = np.zeros((H, 4*H))
+    db = np.zeros((4*H,))
+    dnextc = np.zeros((N, H))
 
-    pass
 
+    # for updates
+    c_update = np.zeros(next_c.shape)
+    h_update = np.zeros((N,H))
+    for i in range(T-1, -1, -1):
+    	# dnext_h, dnext_c, cache <-- in
+    	# dx, dprev_h, dprev_c, dWx, dWh, db <-- out
+    	# print(dnextc.shape, next_c.shape, dh.shape)
+    	dxs, h_update, c_update, dWxs, dWhs, dbs = lstm_step_backward(dh[:,i,:] + h_update, dnextc, cache_vals[i])
+    	dx[:,i,:] = dxs
+    	dWx += dWxs
+    	dWh += dWhs
+    	db += dbs
+    	dnextc = c_update
+
+    dh0 = h_update
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
