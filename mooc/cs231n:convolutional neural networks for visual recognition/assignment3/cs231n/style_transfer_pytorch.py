@@ -26,8 +26,11 @@ def content_loss(content_weight, content_current, content_original):
     """
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
-
+    
+    content_diff = torch.square(content_current - content_original)
+    content_summation = torch.sum(content_diff)
+    # print(content_summation, content_weight)
+    return content_summation * content_weight
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
 def gram_matrix(features, normalize=True):
@@ -46,7 +49,17 @@ def gram_matrix(features, normalize=True):
     """
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    gram = None
+    N, C, H, W = features.shape
+    flatfeet = features.flatten(start_dim = 2).squeeze()
+    # print(flatfeet.shape, flatfeet.T.shape)
+    gram = flatfeet.mm(flatfeet.T)
+    # print(gram.shape)
+    # gram = gram.reshape((1, C, C))
+    if normalize == True:
+        return gram / (H * W * C)
+    return gram
+
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -73,7 +86,16 @@ def style_loss(feats, style_layers, style_targets, style_weights):
     # not be very much code (~5 lines). You will need to use your gram_matrix function.
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # print(feats[1].shape, style_layers[0])
+    # print(len(feats), len(style_layers), len(style_targets), len(style_weights))
+    loss = 0
+    for i in range(len(style_layers)):
+        current_image = feats[ style_layers[i] ]
+        G = gram_matrix (current_image)
+        A = style_targets[i]
+        loss += content_loss(style_weights[i], G, A)
+
+    return loss
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
@@ -91,8 +113,13 @@ def tv_loss(img, tv_weight):
     """
     # Your implementation should be vectorized and not require any loops!
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    _, _, H, W = img.shape
+    height_jiggle = torch.sum(torch.square(img[:,:,1:,:] - img[:,:,0:H-1,:]))
+    weight_jiggle = torch.sum(torch.square(img[:,:,:,1:] - img[:,:,:,0:W-1]))
+    # print(height_jiggle.shape, weight_jiggle.shape)
+    jiggle = height_jiggle + weight_jiggle
+    loss = tv_weight * jiggle
+    return loss
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 def preprocess(img, size=512):
