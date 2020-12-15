@@ -100,7 +100,7 @@ def make_fooling_image(X, target_y, model):
 	X_fooling.requires_grad = True
 	# Idea is to iterate until the scores produced by X_fooling is the same as target?
 	best = -1
-	for i in range(100):
+	for i in range(10):
 		# print(best)
 		scores = model(X_fooling_var)
 
@@ -135,13 +135,12 @@ def class_visualization_update_step(img, model, target_y, l2_reg, learning_rate)
 	# *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
 	img_var = Variable(img, requires_grad = True)
-	scores = model(img)
-	best_val = scores[0, target_y] # sy(I)
+	scores = model(img_var) # sy(I)
+	scores -= l2_reg * img.norm()**2 # R(I)
+	best_val = scores[0, target_y] # argmax()
+	# print(scores.shape, best_val)
 	best_val.backward()
-	regularizer = l2_reg * img.norm() ** 2 # R(I)
-	diff = best_val - regularizer # sy(I) - R(I)
-
-	print(img.shape, best_val, regularizer)
+	img_var.data -= img_var.grad * learning_rate
 	# img_var.data += img_var.grad * learning_rate
 
 	# *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
