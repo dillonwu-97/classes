@@ -12,7 +12,7 @@ import PIL
 NOISE_DIM = 96
 
 dtype = torch.FloatTensor
-dtype = torch.cuda.FloatTensor ## UNCOMMENT THIS LINE IF YOU'RE ON A GPU!
+# dtype = torch.cuda.FloatTensor ## UNCOMMENT THIS LINE IF YOU'RE ON A GPU!
 
 def sample_noise(batch_size, dim, seed=None):
     """
@@ -53,6 +53,7 @@ def discriminator(seed=None):
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
     model = nn.Sequential(
+    	Flatten(), # flatten is NEEDED
     	nn.Linear(784, 256),
     	nn.LeakyReLU(0.01),
     	nn.Linear(256, 256),
@@ -130,8 +131,9 @@ def discriminator_loss(logits_real, logits_fake):
     """
     loss = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-
+    true = bce_loss(logits_real, torch.ones(logits_real.shape).type(dtype))
+    false = bce_loss(logits_fake, torch.zeros(logits_fake.shape).type(dtype))
+    loss = true + false
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return loss
 
@@ -147,8 +149,7 @@ def generator_loss(logits_fake):
     """
     loss = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    loss = bce_loss(logits_fake, 
+    loss = bce_loss(logits_fake, torch.ones(logits_fake.shape).type(dtype))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return loss
@@ -167,7 +168,7 @@ def get_optimizer(model):
     optimizer = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    optimizer = optim.Adam(model.parameters(), lr = 1e-3, betas=(0.5, 0.999))
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     return optimizer
@@ -186,10 +187,11 @@ def ls_discriminator_loss(scores_real, scores_fake):
     loss = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    loss = .5 * torch.square(scores_real - torch.ones(scores_real.shape))
+    loss += .5 * torch.square(scores_fake)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    return loss
+    return torch.mean(loss)
 
 def ls_generator_loss(scores_fake):
     """
@@ -204,10 +206,12 @@ def ls_generator_loss(scores_fake):
     loss = None
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    loss = scores_fake - torch.ones(scores_fake.shape)
+    loss = torch.square(loss)
+    loss *= .5
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-    return loss
+    return torch.mean(loss)
 
 def build_dc_classifier(batch_size):
     """
@@ -222,7 +226,41 @@ def build_dc_classifier(batch_size):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # Reshape into image tensor (Use Unflatten!)
+    # Conv2D: 32 Filters, 5x5, Stride 1
+    # Leaky ReLU(alpha=0.01)
+    # Max Pool 2x2, Stride 2
+    # Conv2D: 64 Filters, 5x5, Stride 1
+    # Leaky ReLU(alpha=0.01)
+    # Max Pool 2x2, Stride 2
+    # Flatten
+    # Fully Connected with output size 4 x 4 x 64
+    # Leaky ReLU(alpha=0.01)
+    # Fully Connected with output size 1
+
+    # 128 x 1 x 28 x 28 image (from data.shape)
+    # Conv numbers calculated as follows (H, W):
+    # Formula: (W-F) / S + 1
+    # Conv1: ( 28 - 5) / 1 + 1 = 24
+    # Pool1: (24 - 2) / 2 + 1 = 12
+    # Conv2: (12 - 5) / 1 + 1 = 8
+    # Pool2: (8 - 2) / 2 + 1 = 4
+    model = nn.Sequential(
+    	# Unflatten(N = data.shape[0], C = data.shape[1], H = data.shape[2], W = data.shape[3]),
+    	Unflatten(N=batch_size, C = 1, H=28, W=28),
+    	nn.Conv2d(1, 32, kernel_size = 5, stride = 1),
+    	nn.LeakyReLU(0.01),
+    	nn.MaxPool2d(2, stride = 2),
+    	nn.Conv2d(32, 64, kernel_size=5, stride = 1),
+    	nn.LeakyReLU(0.01),
+    	nn.MaxPool2d(2, stride=2),
+    	Flatten(),
+    	# out_channel * H3 * W3
+    	nn.Linear(4 * 4 * 64, 4 * 4 * 64),
+    	nn.LeakyReLU(0.01),
+    	nn.Linear(4 * 4* 64, 1)
+    )
+    return model
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
@@ -243,8 +281,44 @@ def build_dc_generator(noise_dim=NOISE_DIM):
     ##############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    '''
 
+    Fully connected with output size 1024
+    ReLU
+    BatchNorm
+    Fully connected with output size 7 x 7 x 128
+    ReLU
+    BatchNorm
+    Reshape into Image Tensor of shape 7, 7, 128
+    Conv2D^T (Transpose): 64 filters of 4x4, stride 2, 'same' padding (use padding=1)
+    ReLU
+    BatchNorm
+    Conv2D^T (Transpose): 1 filter of 4x4, stride 2, 'same' padding (use padding=1)
+    TanH
+    Should have a 28x28x1 image, reshape back into 784 vector
+    '''
+    # print(noise_dim, NOISE_DIM)
+    model = nn.Sequential(
+    	nn.Linear(noise_dim, 1024),
+    	nn.ReLU(),
+    	nn.BatchNorm1d(1024),
+    	nn.Linear(1024, 7 * 7 * 128),
+    	nn.ReLU(),
+    	nn.BatchNorm1d(128 * 7 * 7),
+    	Unflatten(-1,128,7,7),
+    	nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),
+    	nn.ReLU(),
+    	# https://datascience.stackexchange.com/questions/26451/how-to-calculate-the-output-shape-of-conv2d-transpose
+    	# H = (H1 - 1) * stride + kernel ... (7 - 1) * 2 + 4 = 16
+    	# batch norm occurs through channels
+    	nn.BatchNorm2d(64),
+    	nn.ConvTranspose2d(64, 1, kernel_size=4, stride=2, padding=1),
+    	nn.Tanh(),
+    	Flatten()
+    )
+
+
+    return model
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
