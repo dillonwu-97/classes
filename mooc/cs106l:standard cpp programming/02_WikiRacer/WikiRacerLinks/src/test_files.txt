@@ -1,0 +1,5 @@
+./temp_res/ksound.txt
+./temp_res/quokka.txt
+./temp_res/simple-invalid.txt
+./temp_res/simple.txt
+./temp_res/sking.txt
