@@ -8,15 +8,12 @@ Colin_Groves
 Conservation_status
 Diprotodontia
 Enlarge
-Etonix_brachyurus_distribution.svg"_class="image
 Fox
 Gilbert's_potoroo
 Guichenotia_ledifolia
 Habitat
 Herbivorous
 IUCN_Red_List
-Ikispecies-logo.svg"_class="image
-Iktionary-logo-v2.svg"_class="image
 International_Standard_Book_Number
 International_Union_for_Conservation_of_Nature
 Island
@@ -34,9 +31,6 @@ Nocturnal
 Noongar_language
 Northcliffe,_Western_Australia
 OCLC
-Okka_by_the_Hotel_Rottnest,_WA,_Rottnest_Island.jpg"_class="image
-Ommons-logo.svg"_class="image
-Ottnest_Quokka_2004_SeanMcClean.jpg"_class="image
 Perth,_Western_Australia
 Quadrant_(magazine)
 Range_(biology)
@@ -47,7 +41,6 @@ South_West_(Western_Australia)
 Taxonomy_(biology)
 The_Daily_Telegraph
 Two_Peoples_Bay_Nature_Reserve
-Uokka_family.jpg"_class="image
 Vulnerable_species
 Wallaby
 Western_Australia

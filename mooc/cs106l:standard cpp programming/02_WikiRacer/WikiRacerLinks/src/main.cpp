@@ -101,7 +101,8 @@ set<string> findWikiLinks(const string& page_html) {
             // cout << temp << " " << temp2 << endl;
             link = sandwich.substr(temp,temp2 - temp);
             // cout << link << endl;
-            if (link.find(":") != string::npos) {
+            // continue if found ":" inside the link
+            if (link.find(":") != string::npos || link.find("class=\"image") != string::npos) {
                 // cout << link.find(":") << endl;
                 i++;
                 continue;
@@ -121,7 +122,6 @@ set<string> findWikiLinks(const string& page_html) {
     }
 
     // filter map to avoid special items like ones with Category: whatever or Help: whatever
-
 
     return d;
 }
