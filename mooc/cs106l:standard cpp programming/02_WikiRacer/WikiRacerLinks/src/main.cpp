@@ -23,7 +23,7 @@ template<typename T> void printV(vector<T> v) {
  * So we have to turn the passed-in file into a single string...
  * does that sound familiar at all?
  */
-set<string> findWikiLinks(const string& page_html) {
+unordered_set<string> findWikiLinks(const string& page_html) {
     // TODO: delete this return statement and implement the
     //       function!
     // Your solution must use the following algorithms to do the following things:
@@ -47,7 +47,7 @@ set<string> findWikiLinks(const string& page_html) {
     // starting place
     string start_index = "mw-content-text";
     search(it, page_html.end(), start_index.begin(), start_index.end());
-    cout << it - page_html.begin() << endl;
+    // cout << it - page_html.begin() << endl;
     if (it - page_html.begin() == 0) {
         it = page_html.begin();
     }
@@ -64,7 +64,7 @@ set<string> findWikiLinks(const string& page_html) {
         // cout << it - page_html.begin() << endl;
     }   
 
-    printV(v_start);
+    // printV(v_start);
     /****************************** looking for all the finishes with string::find ****************************************/
     vector<int> v_end;
     int offset=page_html.find(start_index);
@@ -86,13 +86,13 @@ set<string> findWikiLinks(const string& page_html) {
     
     // cout << "\n" << endl;
     // cout << page_html.substr(v_start[v_start.size() - 2], 100) << endl;
-    printV(v_end);
+    // printV(v_end);
 
     /*********************************** printing out all of the unique links *********************************************/
     int i = 0, j = 0, temp, temp2;
     string sandwich, link;
     while (i < v_start.size() && j < v_end.size()) {
-        cout << i << " " << j << endl;
+        // cout << i << " " << j << endl;
         if (v_start[i] + link_start.size() < page_html.size() && v_end[j] > v_start[i]) {
             // find the word that is in between > and <
             sandwich = page_html.substr(v_start[i] + link_start.size(), v_end[j] - v_start[i]);
@@ -110,7 +110,7 @@ set<string> findWikiLinks(const string& page_html) {
             // cout << link << endl;
             replace(link.begin(), link.end(), ' ', '_');
             link[0] = toupper(link[0]);
-            // cout << link << endl;
+            // cout << "link is " << link << endl;
             if (temp2 > temp) {
                 d.insert(link);
             }
@@ -120,10 +120,13 @@ set<string> findWikiLinks(const string& page_html) {
         j++;
         // cout << i << " j " << j << endl;
     }
-
+    // cout << " end " << endl;
     // filter map to avoid special items like ones with Category: whatever or Help: whatever
 
-    return d;
+
+    unordered_set<string>d2(d.begin(), d.end());
+
+    return d2;
 }
 
 int main() {
@@ -139,33 +142,36 @@ int main() {
     string temp;
     ifstream file;
     cout << "Enter a file name: ";
-    while(1) {
-        cout << 1 << endl;
-        getline(std::cin, filename);
-        page_html = "";
-        temp="";
+    // while(1) {
+        // cout << 1 << endl;
+    getline(std::cin, filename);
+    page_html = "";
+    temp="";
 
-        cout << "filename is " << filename << endl;
+    cout << "filename is " << filename << endl;
 
-        // TODO: Create a filestream from the filename, and convert it into
-        //       a single string of data called page_html (declared above)
+    // TODO: Create a filestream from the filename, and convert it into
+    //       a single string of data called page_html (declared above)
 
-        // Write code here
-        // filename = "../res/ksound.txt";
-        file.open(filename);
-        if (!file.is_open()) {
-            // cout << filename << endl;
-            perror("Error with opening file");
-            exit(1);
-        }
-        while(getline(file, temp)) { 
-            // cout << temp << endl;
-            page_html += temp;
-        }
-        // cout << page_html << endl;
-        
+    // Write code here
+    // filename = "../res/ksound.txt";
+    file.open(filename);
+    if (!file.is_open()) {
+        // cout << filename << endl;
+        perror("Error with opening file");
+        exit(1);
+    }
+    while(getline(file, temp)) { 
+        // cout << temp << endl;
+        page_html += temp;
+    }
+    // cout << page_html << endl;
+    
 
-        set<string> validLinks = findWikiLinks(page_html);
+    unordered_set<string> validLinks = findWikiLinks(page_html);
+    // for (auto it = validLinks.begin(); it!=validLinks.end(); it++) {
+    //     cout << *it << endl;
+    // }
 
         // TODO: Print out the validLinks set above.
         //       You can print it out in any format; this is just for you
@@ -174,17 +180,17 @@ int main() {
 
         // Write code here
         // cout << filename.substr(11, filename.size() - 11 - 4) << endl;
-        string write_to = "./my-" + filename.substr(11, filename.size() - 11 - 4) + ".txt";
-        ofstream out_file;
-        out_file.open(write_to);
-        for (auto i: validLinks) {
-            out_file << i << endl;
-        }
+        // string write_to = "./my-" + filename.substr(11, filename.size() - 11 - 4) + ".txt";
+        // ofstream out_file;
+        // out_file.open(write_to);
+        // for (auto i: validLinks) {
+        //     out_file << i << endl;
+        // }
 
-        file.close();
-        out_file.close();
+        // file.close();
+        // out_file.close();
 
-    }
+    // }
 
     return 0;
 }
